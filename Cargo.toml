@@ -4,5 +4,20 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+atrium-identity = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
+atrium-oauth-client = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
 axum = "0.7.9"
-tokio = { version = "1", default-features = false, features = ["rt-multi-thread"] }
+elliptic-curve = "0.13.8"
+hickory-resolver = { version = "0.24.1", default-features = false, features = [
+    "system-config",
+    "tokio-runtime",
+] }
+jose-jwk = { version = "0.1.2", default-features = false, features = ["p256"] }
+p256 = { version = "0.13.2", default-features = false, features = ["pem"] }
+pkcs8 = { version = "0.10.2", default-features = false, features = ["pem"] }
+tokio = { version = "1", default-features = false, features = [
+    "rt-multi-thread",
+] }
+
+[dev-dependencies]
+rand = "0.8.5"
