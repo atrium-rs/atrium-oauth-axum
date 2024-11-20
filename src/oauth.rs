@@ -47,20 +47,25 @@ pub type Client = OAuthClient<
     AtprotoHandleResolver<HickoryDnsTxtResolver, DefaultHttpClient>,
 >;
 
-pub fn create_oauth_client(base_url: String, private_key: Option<String>) -> Result<Client> {
+pub fn create_oauth_client(base_url: String, private_keys: Option<String>) -> Result<Client> {
     let http_client = Arc::new(DefaultHttpClient::default());
-    let keys = private_key
-        .and_then(|s| SecretKey::<p256::NistP256>::from_pkcs8_pem(&s).ok())
-        .map(|secret_key| {
-            vec![Jwk {
-                key: Key::from(&secret_key.into()),
-                prm: Parameters {
-                    kid: Some(String::from("key01")),
-                    cls: Some(Class::Signing),
-                    ..Default::default()
-                },
-            }]
-        });
+    let keys = private_keys.map(|keys| {
+        keys.split(',')
+            .enumerate()
+            .filter_map(|(i, s)| {
+                SecretKey::<p256::NistP256>::from_pkcs8_pem(s)
+                    .map(|secret_key| Jwk {
+                        key: Key::from(&secret_key.into()),
+                        prm: Parameters {
+                            kid: Some(format!("kid-{i:02}")),
+                            cls: Some(Class::Signing),
+                            ..Default::default()
+                        },
+                    })
+                    .ok()
+            })
+            .collect::<Vec<_>>()
+    });
     OAuthClient::new(OAuthClientConfig {
         client_metadata: AtprotoClientMetadata {
             client_id: format!("{base_url}{CLIENT_METADATA_PATH}"),

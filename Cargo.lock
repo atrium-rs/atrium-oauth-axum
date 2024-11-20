@@ -185,6 +185,7 @@ dependencies = [
  "p256",
  "pkcs8",
  "rand",
+ "serde",
  "tokio",
 ]
 

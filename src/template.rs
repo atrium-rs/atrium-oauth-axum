@@ -13,3 +13,7 @@ pub fn url_for(page: Page) -> &'static str {
 #[derive(Template)]
 #[template(path = "home.html")]
 pub struct Home {}
+
+#[derive(Template)]
+#[template(path = "login.html")]
+pub struct Login {}
