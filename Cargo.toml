@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 atrium-identity = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
 atrium-oauth-client = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
+askama = { version = "0.12.1", default-features = false, features = ["with-axum"] }
+askama_axum = { version = "0.4.0", default-features = false }
 axum = "0.7.9"
 elliptic-curve = "0.13.8"
 hickory-resolver = { version = "0.24.1", default-features = false, features = [
