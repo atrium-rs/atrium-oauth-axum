@@ -1,7 +1,7 @@
-use atrium_oauth_axum::constant::{CLIENT_METADATA_PATH, JWKS_PATH};
+use atrium_oauth_axum::constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH};
 use atrium_oauth_axum::oauth::{create_oauth_client, Client};
 use atrium_oauth_axum::template::{url_for, Home, Login, Page};
-use atrium_oauth_client::{AuthorizeOptions, OAuthClientMetadata};
+use atrium_oauth_client::{AuthorizeOptions, CallbackParams, OAuthClientMetadata};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::Redirect;
@@ -34,6 +34,7 @@ async fn main() -> io::Result<()> {
         .route(JWKS_PATH, get(jwks))
         .route(url_for(Page::OAuthLogin), get(get_oauth_login))
         .route(url_for(Page::OAuthLogin), post(post_oauth_login))
+        .route(CALLBACK_PATH, get(callback))
         .with_state(Arc::new(AppState { client }));
 
     // run our app with hyper, listening globally on port ${PORT}
@@ -73,6 +74,17 @@ async fn post_oauth_login(
         Err(err) => {
             eprintln!("failed to authorize: {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn callback(State(state): State<Arc<AppState>>, Form(params): Form<CallbackParams>) {
+    match state.client.callback(params).await {
+        Ok((_session, state)) => {
+            println!("got session, state: {state:?}");
+        }
+        Err(err) => {
+            eprintln!("failed to callback: {err}");
         }
     }
 }
