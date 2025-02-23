@@ -1,8 +1,8 @@
 use crate::constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH};
 use atrium_identity::did::{CommonDidResolver, CommonDidResolverConfig, DEFAULT_PLC_DIRECTORY_URL};
 use atrium_identity::handle::{AtprotoHandleResolver, AtprotoHandleResolverConfig, DnsTxtResolver};
-use atrium_oauth_client::store::memory::MemorySimpleStore;
-use atrium_oauth_client::store::state::{InternalStateData, MemoryStateStore};
+use atrium_oauth_client::store::session::MemorySessionStore;
+use atrium_oauth_client::store::state::MemoryStateStore;
 use atrium_oauth_client::{
     AtprotoClientMetadata, AuthMethod, DefaultHttpClient, GrantType, KnownScope, OAuthClient,
     OAuthClientConfig, OAuthResolverConfig, Result, Scope,
@@ -42,12 +42,17 @@ impl DnsTxtResolver for HickoryDnsTxtResolver {
 }
 
 pub type Client = OAuthClient<
-    MemorySimpleStore<String, InternalStateData>,
+    MemoryStateStore,
+    MemorySessionStore,
     CommonDidResolver<DefaultHttpClient>,
     AtprotoHandleResolver<HickoryDnsTxtResolver, DefaultHttpClient>,
 >;
 
-pub fn create_oauth_client(base_url: String, private_keys: Option<String>) -> Result<Client> {
+pub fn create_oauth_client(
+    base_url: String,
+    private_keys: Option<String>,
+    redis_client: Arc<redis::Client>,
+) -> Result<Client> {
     let http_client = Arc::new(DefaultHttpClient::default());
     let keys = private_keys.map(|keys| {
         keys.split(',')
@@ -69,7 +74,7 @@ pub fn create_oauth_client(base_url: String, private_keys: Option<String>) -> Re
     OAuthClient::new(OAuthClientConfig {
         client_metadata: AtprotoClientMetadata {
             client_id: format!("{base_url}{CLIENT_METADATA_PATH}"),
-            client_uri: base_url.clone(),
+            client_uri: Some(base_url.clone()),
             redirect_uris: vec![format!("{base_url}{CALLBACK_PATH}")],
             token_endpoint_auth_method: AuthMethod::PrivateKeyJwt,
             grant_types: vec![GrantType::AuthorizationCode],
@@ -82,6 +87,7 @@ pub fn create_oauth_client(base_url: String, private_keys: Option<String>) -> Re
         },
         keys,
         state_store: MemoryStateStore::default(),
+        session_store: MemorySessionStore::default(),
         resolver: OAuthResolverConfig {
             did_resolver: CommonDidResolver::new(CommonDidResolverConfig {
                 plc_directory_url: DEFAULT_PLC_DIRECTORY_URL.to_string(),

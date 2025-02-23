@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-atrium-identity = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
-atrium-oauth-client = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
-askama = { version = "0.12.1", default-features = false, features = ["with-axum"] }
+atrium-oauth-client = "0.1.0"
+atrium-identity = "0.1.0"
+anyhow = "1.0.96"
+askama = { version = "0.12.1", default-features = false, features = [
+    "with-axum",
+] }
 askama_axum = { version = "0.4.0", default-features = false }
 axum = "0.7.9"
 elliptic-curve = "0.13.8"
@@ -17,7 +20,12 @@ hickory-resolver = { version = "0.24.1", default-features = false, features = [
 jose-jwk = { version = "0.1.2", default-features = false, features = ["p256"] }
 p256 = { version = "0.13.2", default-features = false, features = ["pem"] }
 pkcs8 = { version = "0.10.2", default-features = false, features = ["pem"] }
+redis = { version = "0.29.0", features = ["tokio-native-tls-comp"] }
+serde = { version = "1.0.215", default-features = false, features = ["derive"] }
 tokio = { version = "1", default-features = false, features = [
     "rt-multi-thread",
 ] }
-serde = { version = "1.0.215", default-features = false, features = ["derive"] }
+
+[patch.crates-io]
+atrium-oauth-client = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
+atrium-identity = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
