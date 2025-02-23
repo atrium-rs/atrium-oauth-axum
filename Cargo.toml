@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-atrium-oauth-client = "0.1.0"
+atrium-api = "0.25.0"
+atrium-common = "0.1.0"
 atrium-identity = "0.1.0"
+atrium-oauth-client = "0.1.0"
 anyhow = "1.0.96"
 askama = { version = "0.12.1", default-features = false, features = [
     "with-axum",
@@ -27,5 +29,7 @@ tokio = { version = "1", default-features = false, features = [
 ] }
 
 [patch.crates-io]
-atrium-oauth-client = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
+atrium-api = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
+atrium-common = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
 atrium-identity = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
+atrium-oauth-client = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }

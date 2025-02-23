@@ -200,6 +200,8 @@ dependencies = [
  "anyhow",
  "askama",
  "askama_axum",
+ "atrium-api",
+ "atrium-common",
  "atrium-identity",
  "atrium-oauth-client",
  "axum",

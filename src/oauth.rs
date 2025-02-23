@@ -1,11 +1,12 @@
 use crate::constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH};
+use atrium_common::store::Store;
 use atrium_identity::did::{CommonDidResolver, CommonDidResolverConfig, DEFAULT_PLC_DIRECTORY_URL};
 use atrium_identity::handle::{AtprotoHandleResolver, AtprotoHandleResolverConfig, DnsTxtResolver};
 use atrium_oauth_client::store::session::MemorySessionStore;
-use atrium_oauth_client::store::state::MemoryStateStore;
+use atrium_oauth_client::store::state::{InternalStateData, MemoryStateStore, StateStore};
 use atrium_oauth_client::{
     AtprotoClientMetadata, AuthMethod, DefaultHttpClient, GrantType, KnownScope, OAuthClient,
-    OAuthClientConfig, OAuthResolverConfig, Result, Scope,
+    OAuthClientConfig, OAuthResolverConfig, Scope,
 };
 use elliptic_curve::SecretKey;
 use hickory_resolver::TokioAsyncResolver;
@@ -41,6 +42,29 @@ impl DnsTxtResolver for HickoryDnsTxtResolver {
     }
 }
 
+struct RedisStateStore {
+    client: Arc<redis::Client>,
+}
+
+impl Store<String, InternalStateData> for RedisStateStore {
+    type Error = redis::RedisError;
+
+    async fn get(&self, key: &String) -> Result<Option<InternalStateData>, Self::Error> {
+        todo!()
+    }
+    async fn set(&self, key: String, value: InternalStateData) -> Result<(), Self::Error> {
+        todo!()
+    }
+    async fn del(&self, key: &String) -> Result<(), Self::Error> {
+        todo!()
+    }
+    async fn clear(&self) -> Result<(), Self::Error> {
+        todo!()
+    }
+}
+
+impl StateStore for RedisStateStore {}
+
 pub type Client = OAuthClient<
     MemoryStateStore,
     MemorySessionStore,
@@ -52,7 +76,7 @@ pub fn create_oauth_client(
     base_url: String,
     private_keys: Option<String>,
     redis_client: Arc<redis::Client>,
-) -> Result<Client> {
+) -> atrium_oauth_client::Result<Client> {
     let http_client = Arc::new(DefaultHttpClient::default());
     let keys = private_keys.map(|keys| {
         keys.split(',')

@@ -1,4 +1,5 @@
 use anyhow::Result;
+use atrium_api::agent::Agent;
 use atrium_oauth_axum::constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH};
 use atrium_oauth_axum::oauth::{self, create_oauth_client};
 use atrium_oauth_axum::template::{url_for, Home, Login, Page};
@@ -83,8 +84,9 @@ async fn post_oauth_login(
 
 async fn callback(State(state): State<Arc<AppState>>, Form(params): Form<CallbackParams>) {
     match state.oauth_client.callback(params).await {
-        Ok((_session, state)) => {
-            println!("got session, state: {state:?}");
+        Ok((session, _)) => {
+            let agent = Agent::new(session);
+            println!("did: {:?}", agent.did().await);
         }
         Err(err) => {
             eprintln!("failed to callback: {err}");
