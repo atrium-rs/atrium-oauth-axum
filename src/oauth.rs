@@ -3,7 +3,7 @@ use atrium_common::store::Store;
 use atrium_identity::did::{CommonDidResolver, CommonDidResolverConfig, DEFAULT_PLC_DIRECTORY_URL};
 use atrium_identity::handle::{AtprotoHandleResolver, AtprotoHandleResolverConfig, DnsTxtResolver};
 use atrium_oauth_client::store::session::MemorySessionStore;
-use atrium_oauth_client::store::state::{InternalStateData, MemoryStateStore, StateStore};
+use atrium_oauth_client::store::state::{InternalStateData, StateStore};
 use atrium_oauth_client::{
     AtprotoClientMetadata, AuthMethod, DefaultHttpClient, GrantType, KnownScope, OAuthClient,
     OAuthClientConfig, OAuthResolverConfig, Scope,
@@ -12,6 +12,7 @@ use elliptic_curve::SecretKey;
 use hickory_resolver::TokioAsyncResolver;
 use jose_jwk::{Class, Jwk, Key, Parameters};
 use pkcs8::DecodePrivateKey;
+use redis::AsyncCommands;
 use std::sync::Arc;
 
 pub struct HickoryDnsTxtResolver {
@@ -42,7 +43,7 @@ impl DnsTxtResolver for HickoryDnsTxtResolver {
     }
 }
 
-struct RedisStateStore {
+pub struct RedisStateStore {
     client: Arc<redis::Client>,
 }
 
@@ -50,23 +51,38 @@ impl Store<String, InternalStateData> for RedisStateStore {
     type Error = redis::RedisError;
 
     async fn get(&self, key: &String) -> Result<Option<InternalStateData>, Self::Error> {
-        todo!()
+        self.client
+            .get_multiplexed_async_connection()
+            .await?
+            .get::<_, Option<String>>(key)
+            .await
+            .map(|value| {
+                value.map(|value| serde_json::from_str(&value).expect("failed to deserialize JSON"))
+            })
     }
     async fn set(&self, key: String, value: InternalStateData) -> Result<(), Self::Error> {
-        todo!()
+        self.client
+            .get_multiplexed_async_connection()
+            .await?
+            .set(
+                key,
+                serde_json::to_string(&value).expect("failed to serialize JSON"),
+            )
+            .await
     }
     async fn del(&self, key: &String) -> Result<(), Self::Error> {
-        todo!()
+        // TODO
+        Ok(())
     }
     async fn clear(&self) -> Result<(), Self::Error> {
-        todo!()
+        unimplemented!()
     }
 }
 
 impl StateStore for RedisStateStore {}
 
 pub type Client = OAuthClient<
-    MemoryStateStore,
+    RedisStateStore,
     MemorySessionStore,
     CommonDidResolver<DefaultHttpClient>,
     AtprotoHandleResolver<HickoryDnsTxtResolver, DefaultHttpClient>,
@@ -110,7 +126,9 @@ pub fn create_oauth_client(
             token_endpoint_auth_signing_alg: Some(String::from("ES256")),
         },
         keys,
-        state_store: MemoryStateStore::default(),
+        state_store: RedisStateStore {
+            client: redis_client,
+        },
         session_store: MemorySessionStore::default(),
         resolver: OAuthResolverConfig {
             did_resolver: CommonDidResolver::new(CommonDidResolverConfig {

@@ -212,6 +212,7 @@ dependencies = [
  "pkcs8",
  "redis",
  "serde",
+ "serde_json",
  "tokio",
 ]
 
@@ -1838,6 +1839,8 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "ryu",
+ "serde",
+ "serde_json",
  "sha1_smol",
  "socket2",
  "tokio",
