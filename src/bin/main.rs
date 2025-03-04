@@ -1,14 +1,18 @@
 use anyhow::Result;
 use atrium_api::agent::Agent;
-use atrium_oauth_axum::constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH};
-use atrium_oauth_axum::oauth::{self, create_oauth_client};
-use atrium_oauth_axum::template::{url_for, Home, Login, Page};
+use atrium_oauth_axum::{
+    constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH},
+    oauth::{self, create_oauth_client},
+    template::{url_for, Home, Login, Page},
+};
 use atrium_oauth_client::{AuthorizeOptions, CallbackParams, OAuthClientMetadata};
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::response::Redirect;
-use axum::routing::{get, post};
-use axum::{Form, Json, Router};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::Redirect,
+    routing::{get, post},
+    {Form, Json, Router},
+};
 use jose_jwk::JwkSet;
 use serde::Deserialize;
 use std::{env, sync::Arc};
