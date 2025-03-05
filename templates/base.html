@@ -11,9 +11,9 @@
 <header>
   <hgroup>
     <h1>atproto OAuth Web Service Example</h1>
-    {# if g.user #}
-      <!-- <p>Hello <span style="font-family: monospace;">@{# g.user['handle'] #}</span>!</p> -->
-    {# endif #}
+    {% if let Some(user) = g.user %}
+      <p>Hello <span style="font-family: monospace;">@{{ user.handle.as_ref() }}</span>!</p>
+    {% endif %}
   </hgroup>
   <nav>
     <ul>
