@@ -1,6 +1,7 @@
 use anyhow::Result;
 use atrium_api::agent::SessionManager;
 use atrium_oauth_axum::{
+    axum::SESSION_USER_KEY,
     constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH},
     oauth::{self, create_oauth_client},
     template::{url_for, GlobalContext, Home, Login, Page},
@@ -23,8 +24,6 @@ use tower_sessions_redis_store::{
     fred::prelude::{ClientLike, Config, Pool},
     RedisStore,
 };
-
-const SESSION_USER_KEY: &str = "user";
 
 struct AppState {
     oauth_client: oauth::Client,
@@ -61,6 +60,7 @@ async fn main() -> Result<()> {
         .route(JWKS_PATH, get(jwks))
         .route(url_for(Page::OAuthLogin), get(get_oauth_login))
         .route(url_for(Page::OAuthLogin), post(post_oauth_login))
+        .route(url_for(Page::OAuthLogout), get(get_oauth_logout))
         .route(CALLBACK_PATH, get(callback))
         .layer(session_layer)
         .with_state(Arc::new(AppState {
@@ -77,15 +77,8 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn home(session: Session) -> Result<Home, StatusCode> {
-    Ok(Home {
-        g: GlobalContext {
-            user: session
-                .get(SESSION_USER_KEY)
-                .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-        },
-    })
+async fn home(g: GlobalContext) -> Result<Home, StatusCode> {
+    Ok(Home { g })
 }
 
 async fn client_metadata(State(state): State<Arc<AppState>>) -> Json<OAuthClientMetadata> {
@@ -96,15 +89,8 @@ async fn jwks(State(state): State<Arc<AppState>>) -> Json<JwkSet> {
     Json(state.oauth_client.jwks())
 }
 
-async fn get_oauth_login(session: Session) -> Result<Login, StatusCode> {
-    Ok(Login {
-        g: GlobalContext {
-            user: session
-                .get(SESSION_USER_KEY)
-                .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-        },
-    })
+async fn get_oauth_login(g: GlobalContext) -> Result<Login, StatusCode> {
+    Ok(Login { g })
 }
 
 async fn post_oauth_login(
@@ -122,6 +108,11 @@ async fn post_oauth_login(
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
+}
+
+async fn get_oauth_logout(session: Session) -> Redirect {
+    session.clear().await;
+    Redirect::to("/")
 }
 
 async fn callback(

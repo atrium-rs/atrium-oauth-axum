@@ -4,11 +4,13 @@ use askama_derive_axum::IntoResponse;
 
 pub enum Page {
     OAuthLogin,
+    OAuthLogout,
 }
 
 pub fn url_for(page: Page) -> &'static str {
     match page {
         Page::OAuthLogin => "/oauth/login",
+        Page::OAuthLogout => "/oauth/logout",
     }
 }
 
