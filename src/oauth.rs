@@ -83,7 +83,7 @@ pub fn create_oauth_client(
             client_uri: Some(base_url.clone()),
             redirect_uris: vec![format!("{base_url}{CALLBACK_PATH}")],
             token_endpoint_auth_method: AuthMethod::PrivateKeyJwt,
-            grant_types: vec![GrantType::AuthorizationCode],
+            grant_types: vec![GrantType::AuthorizationCode, GrantType::RefreshToken],
             scopes: vec![
                 Scope::Known(KnownScope::Atproto),
                 Scope::Known(KnownScope::TransitionGeneric),
