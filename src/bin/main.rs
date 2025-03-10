@@ -27,7 +27,6 @@ use tower_sessions_redis_store::{
 
 struct AppState {
     oauth_client: oauth::Client,
-    redis_client: Arc<redis::Client>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -37,22 +36,21 @@ struct OAuthLoginParams {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let redis_client = Arc::new(redis::Client::open(env::var("REDIS_URL")?)?);
-    let oauth_client = create_oauth_client(
-        env::var("URL").unwrap_or_else(|_| String::from("http://localhost:10000")),
-        env::var("PRIVATE_KEY").ok(),
-        Arc::clone(&redis_client),
-    )?;
-
     // create a redis connection pool
-    let config = Config::from_url_centralized(&format!("{}/1", env::var("REDIS_URL")?))?;
+    let config = Config::from_url_centralized(&env::var("REDIS_URL")?)?;
     let pool = Pool::new(config, None, None, None, 6)?;
     let redis_conn = pool.connect();
     pool.wait_for_connect().await?;
 
     // create a session layer with a redis store
     let session_layer =
-        SessionManagerLayer::new(RedisStore::new(pool)).with_expiry(Expiry::OnSessionEnd);
+        SessionManagerLayer::new(RedisStore::new(pool.clone())).with_expiry(Expiry::OnSessionEnd);
+
+    let oauth_client = create_oauth_client(
+        env::var("URL").unwrap_or_else(|_| String::from("http://localhost:10000")),
+        env::var("PRIVATE_KEY").ok(),
+        pool,
+    )?;
 
     let app = Router::new()
         .route("/", get(home))
@@ -63,10 +61,7 @@ async fn main() -> Result<()> {
         .route(url_for(Page::OAuthLogout), get(get_oauth_logout))
         .route(CALLBACK_PATH, get(callback))
         .layer(session_layer)
-        .with_state(Arc::new(AppState {
-            oauth_client,
-            redis_client,
-        }));
+        .with_state(Arc::new(AppState { oauth_client }));
     // run our app with hyper, listening globally on port ${PORT}
     let port = env::var("PORT").unwrap_or_else(|_| String::from("10000"));
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;

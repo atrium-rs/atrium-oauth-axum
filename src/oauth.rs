@@ -1,6 +1,6 @@
 use crate::{
     constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH},
-    store::RedisStore,
+    store::FredStore,
 };
 use atrium_api::types::string::Did;
 use atrium_identity::{
@@ -17,6 +17,7 @@ use hickory_resolver::TokioAsyncResolver;
 use jose_jwk::{Class, Jwk, Key, Parameters};
 use pkcs8::DecodePrivateKey;
 use std::sync::Arc;
+use tower_sessions_redis_store::fred::clients::Pool;
 
 pub struct HickoryDnsTxtResolver {
     resolver: TokioAsyncResolver,
@@ -47,8 +48,8 @@ impl DnsTxtResolver for HickoryDnsTxtResolver {
 }
 
 pub type Client = OAuthClient<
-    RedisStore<String, InternalStateData>,
-    RedisStore<Did, Session>,
+    FredStore<String, InternalStateData>,
+    FredStore<Did, Session>,
     CommonDidResolver<DefaultHttpClient>,
     AtprotoHandleResolver<HickoryDnsTxtResolver, DefaultHttpClient>,
 >;
@@ -56,7 +57,7 @@ pub type Client = OAuthClient<
 pub fn create_oauth_client(
     base_url: String,
     private_keys: Option<String>,
-    redis_client: Arc<redis::Client>,
+    redis_pool: Pool,
 ) -> atrium_oauth_client::Result<Client> {
     let http_client = Arc::new(DefaultHttpClient::default());
     let keys = private_keys.map(|keys| {
@@ -91,8 +92,8 @@ pub fn create_oauth_client(
             token_endpoint_auth_signing_alg: Some(String::from("ES256")),
         },
         keys,
-        state_store: RedisStore::new(Arc::clone(&redis_client), Some(String::from("state"))),
-        session_store: RedisStore::new(Arc::clone(&redis_client), Some(String::from("session"))),
+        state_store: FredStore::new(redis_pool.clone(), Some(String::from("state"))),
+        session_store: FredStore::new(redis_pool.clone(), Some(String::from("session"))),
         resolver: OAuthResolverConfig {
             did_resolver: CommonDidResolver::new(CommonDidResolverConfig {
                 plc_directory_url: DEFAULT_PLC_DIRECTORY_URL.to_string(),

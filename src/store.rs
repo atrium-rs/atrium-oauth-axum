@@ -4,18 +4,61 @@ use atrium_oauth_client::store::{
     session::{Session, SessionStore},
     state::{InternalStateData, StateStore},
 };
-use redis::AsyncCommands;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{hash::Hash, sync::Arc};
+use std::hash::Hash;
+use tower_sessions_redis_store::fred::{
+    bytes::Bytes,
+    clients::Pool,
+    error::{Error, ErrorKind},
+    prelude::KeysInterface,
+    types::{FromValue, Value},
+};
 
-pub struct RedisStore<K, V> {
-    client: Arc<redis::Client>,
+struct FredValue<T>(Option<T>);
+
+impl<T> FromValue for FredValue<T>
+where
+    T: DeserializeOwned,
+{
+    fn from_value(value: Value) -> Result<Self, Error> {
+        value
+            .as_bytes()
+            .map(|bytes| {
+                println!("bytes: {:?}", bytes);
+                println!("bytes: {:?}", std::str::from_utf8(bytes));
+                serde_json::from_slice::<T>(bytes)
+                    .map_err(|e| Error::new(ErrorKind::Unknown, e.to_string()))
+            })
+            .transpose()
+            .map(FredValue)
+    }
+}
+
+impl<T> TryFrom<FredValue<T>> for Value
+where
+    T: Serialize,
+{
+    type Error = Error;
+
+    fn try_from(value: FredValue<T>) -> Result<Self, Self::Error> {
+        println!("try_from");
+        match value.0 {
+            Some(value) => serde_json::to_vec(&value)
+                .map(|data| Value::Bytes(Bytes::from(data)))
+                .map_err(|e| Error::new(ErrorKind::Unknown, e.to_string())),
+            None => Ok(Value::Null),
+        }
+    }
+}
+
+pub struct FredStore<K, V> {
+    client: Pool,
     prefix: Option<String>,
     _marker: std::marker::PhantomData<(K, V)>,
 }
 
-impl<K, V> RedisStore<K, V> {
-    pub fn new(client: Arc<redis::Client>, prefix: Option<String>) -> Self {
+impl<K, V> FredStore<K, V> {
+    pub fn new(client: Pool, prefix: Option<String>) -> Self {
         Self {
             client,
             prefix,
@@ -27,51 +70,42 @@ impl<K, V> RedisStore<K, V> {
         K: AsRef<str>,
     {
         match &self.prefix {
-            Some(prefix) => format!("{}:{}", prefix, key.as_ref()),
+            Some(prefix) => format!("{prefix}:{}", key.as_ref()),
             None => key.as_ref().into(),
         }
     }
 }
 
-impl<K, V> Store<K, V> for RedisStore<K, V>
+impl<K, V> Store<K, V> for FredStore<K, V>
 where
     K: Eq + Hash + AsRef<str> + Send + Sync,
     V: Clone + Serialize + DeserializeOwned + Send + Sync,
 {
-    type Error = redis::RedisError;
+    type Error = Error;
 
     async fn get(&self, key: &K) -> Result<Option<V>, Self::Error> {
         self.client
-            .get_multiplexed_async_connection()
-            .await?
-            .get::<_, Option<String>>(self.key(key))
+            .get::<FredValue<V>, _>(self.key(key))
             .await
-            .map(|value| {
-                value.map(|value| serde_json::from_str(&value).expect("failed to deserialize JSON"))
-            })
+            .map(|result| result.0)
     }
     async fn set(&self, key: K, value: V) -> Result<(), Self::Error> {
         self.client
-            .get_multiplexed_async_connection()
-            .await?
-            .set(
-                self.key(&key),
-                serde_json::to_string(&value).expect("failed to serialize JSON"),
-            )
+            .set::<String, _, _>(self.key(&key), FredValue(Some(value)), None, None, false)
             .await
+            .map(|_| ())
     }
     async fn del(&self, key: &K) -> Result<(), Self::Error> {
         self.client
-            .get_multiplexed_async_connection()
-            .await?
-            .del(self.key(key))
+            .del::<String, _>(self.key(key))
             .await
+            .map(|_| ())
     }
     async fn clear(&self) -> Result<(), Self::Error> {
         unimplemented!()
     }
 }
 
-impl StateStore for RedisStore<String, InternalStateData> {}
+impl StateStore for FredStore<String, InternalStateData> {}
 
-impl SessionStore for RedisStore<Did, Session> {}
+impl SessionStore for FredStore<Did, Session> {}
