@@ -8,7 +8,9 @@ use atrium_oauth_axum::{
     types::User,
     utils::resolve_identity,
 };
-use atrium_oauth_client::{AuthorizeOptions, CallbackParams, OAuthClientMetadata};
+use atrium_oauth_client::{
+    AuthorizeOptions, CallbackParams, KnownScope, OAuthClientMetadata, Scope,
+};
 use axum::{
     extract::State,
     http::StatusCode,
@@ -94,7 +96,16 @@ async fn post_oauth_login(
 ) -> Result<Redirect, StatusCode> {
     match state
         .oauth_client
-        .authorize(params.username, AuthorizeOptions::default())
+        .authorize(
+            params.username,
+            AuthorizeOptions {
+                scopes: vec![
+                    Scope::Known(KnownScope::Atproto),
+                    Scope::Known(KnownScope::TransitionGeneric),
+                ],
+                ..Default::default()
+            },
+        )
         .await
     {
         Ok(authorization_url) => Ok(Redirect::to(&authorization_url)),
