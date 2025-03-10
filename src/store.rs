@@ -24,8 +24,6 @@ where
         value
             .as_bytes()
             .map(|bytes| {
-                println!("bytes: {:?}", bytes);
-                println!("bytes: {:?}", std::str::from_utf8(bytes));
                 serde_json::from_slice::<T>(bytes)
                     .map_err(|e| Error::new(ErrorKind::Unknown, e.to_string()))
             })
@@ -41,7 +39,6 @@ where
     type Error = Error;
 
     fn try_from(value: FredValue<T>) -> Result<Self, Self::Error> {
-        println!("try_from");
         match value.0 {
             Some(value) => serde_json::to_vec(&value)
                 .map(|data| Value::Bytes(Bytes::from(data)))
