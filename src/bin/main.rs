@@ -21,9 +21,13 @@ use axum::{
 use jose_jwk::JwkSet;
 use serde::Deserialize;
 use std::{env, sync::Arc};
+use tokio::try_join;
 use tower_sessions::{Expiry, Session, SessionManagerLayer};
 use tower_sessions_redis_store::{
-    fred::prelude::{ClientLike, Config, Pool},
+    fred::{
+        prelude::{ClientLike, Config},
+        types::Builder,
+    },
     RedisStore,
 };
 
@@ -39,21 +43,30 @@ struct OAuthLoginParams {
 #[tokio::main]
 async fn main() -> Result<()> {
     // create a redis connection pool
-    let config = Config::from_url_centralized(&env::var("REDIS_URL")?)?;
-    let pool = Pool::new(config, None, None, None, 6)?;
-    let redis_conn = pool.connect();
-    pool.wait_for_connect().await?;
+    let pool0 = Builder::from_config(Config::from_url_centralized(&format!(
+        "{}/0",
+        env::var("REDIS_URL")?
+    ))?)
+    .build_pool(6)?;
+    let pool1 = Builder::from_config(Config::from_url_centralized(&format!(
+        "{}/1",
+        env::var("REDIS_URL")?
+    ))?)
+    .build_pool(4)?;
+    pool0.connect();
+    pool1.connect();
+    try_join!(pool0.wait_for_connect(), pool1.wait_for_connect())?;
 
     // create a session layer with a redis store
     let session_layer =
-        SessionManagerLayer::new(RedisStore::new(pool.clone())).with_expiry(Expiry::OnSessionEnd);
-
+        SessionManagerLayer::new(RedisStore::new(pool0)).with_expiry(Expiry::OnSessionEnd);
+    // create an OAuth client
     let oauth_client = create_oauth_client(
         env::var("URL").unwrap_or_else(|_| String::from("http://localhost:10000")),
         env::var("PRIVATE_KEY").ok(),
-        pool,
+        pool1,
     )?;
-
+    // create an axum app
     let app = Router::new()
         .route("/", get(home))
         .route(CLIENT_METADATA_PATH, get(client_metadata))
@@ -68,8 +81,6 @@ async fn main() -> Result<()> {
     let port = env::var("PORT").unwrap_or_else(|_| String::from("10000"));
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
     axum::serve(listener, app).await?;
-
-    redis_conn.await??;
 
     Ok(())
 }
