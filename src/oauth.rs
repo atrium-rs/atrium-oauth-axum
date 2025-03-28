@@ -3,6 +3,13 @@ use crate::{
     store::FredStore,
 };
 use atrium_api::types::string::Did;
+use atrium_common::{
+    resolver::CachedResolver,
+    types::cached::{
+        r#impl::{Cache, CacheImpl},
+        Cacheable,
+    },
+};
 use atrium_identity::{
     did::{CommonDidResolver, CommonDidResolverConfig, DEFAULT_PLC_DIRECTORY_URL},
     handle::{AtprotoHandleResolver, AtprotoHandleResolverConfig, DnsTxtResolver},
@@ -50,8 +57,8 @@ impl DnsTxtResolver for HickoryDnsTxtResolver {
 pub type Client = OAuthClient<
     FredStore<String, InternalStateData>,
     FredStore<Did, Session>,
-    CommonDidResolver<DefaultHttpClient>,
-    AtprotoHandleResolver<HickoryDnsTxtResolver, DefaultHttpClient>,
+    CachedResolver<CommonDidResolver<DefaultHttpClient>>,
+    CachedResolver<AtprotoHandleResolver<HickoryDnsTxtResolver, DefaultHttpClient>>,
 >;
 
 pub fn create_oauth_client(
@@ -98,11 +105,13 @@ pub fn create_oauth_client(
             did_resolver: CommonDidResolver::new(CommonDidResolverConfig {
                 plc_directory_url: DEFAULT_PLC_DIRECTORY_URL.to_string(),
                 http_client: http_client.clone(),
-            }),
+            })
+            .cached(CacheImpl::new(Default::default())),
             handle_resolver: AtprotoHandleResolver::new(AtprotoHandleResolverConfig {
                 dns_txt_resolver: HickoryDnsTxtResolver::default(),
                 http_client: http_client.clone(),
-            }),
+            })
+            .cached(CacheImpl::new(Default::default())),
             authorization_server_metadata: Default::default(),
             protected_resource_metadata: Default::default(),
         },
