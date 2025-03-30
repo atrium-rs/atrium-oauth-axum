@@ -19,6 +19,8 @@ where
             .get::<Session>()
             .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
+        log::warn!("session: {:?}", session);
+
         Ok(GlobalContext {
             user: session
                 .get(SESSION_USER_KEY)
