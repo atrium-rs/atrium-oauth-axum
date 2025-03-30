@@ -25,7 +25,7 @@ use jose_jwk::JwkSet;
 use serde::Deserialize;
 use std::{env, sync::Arc};
 use tokio::try_join;
-use tower_sessions::{Expiry, Session, SessionManagerLayer};
+use tower_sessions::{cookie::SameSite, Expiry, Session, SessionManagerLayer};
 use tower_sessions_redis_store::{
     fred::{
         prelude::{ClientLike, Config},
@@ -69,8 +69,9 @@ async fn main() -> Result<()> {
     try_join!(pool0.wait_for_connect(), pool1.wait_for_connect())?;
 
     // create a session layer with a redis store
-    let session_layer =
-        SessionManagerLayer::new(RedisStore::new(pool0)).with_expiry(Expiry::OnSessionEnd);
+    let session_layer = SessionManagerLayer::new(RedisStore::new(pool0))
+        .with_expiry(Expiry::OnSessionEnd)
+        .with_same_site(SameSite::Lax);
     // create an OAuth client
     let oauth_client = create_oauth_client(
         env::var("URL").unwrap_or_else(|_| String::from("http://localhost:10000")),
