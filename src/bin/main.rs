@@ -1,10 +1,13 @@
 use anyhow::Result;
-use atrium_api::agent::SessionManager;
+use atrium_api::{
+    agent::{Agent, SessionManager},
+    types::{string::Datetime, Collection, TryIntoUnknown},
+};
 use atrium_oauth_axum::{
     axum::SESSION_USER_KEY,
     constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH},
     oauth::{self, create_oauth_client},
-    template::{url_for, GlobalContext, Home, Login, Page},
+    template::{url_for, BskyPost, GlobalContext, Home, Login, Page},
     types::User,
     utils::resolve_identity,
 };
@@ -40,8 +43,16 @@ struct OAuthLoginParams {
     username: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct PostBskyParams {
+    post_text: String,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    // initialize the logger
+    env_logger::init();
+
     // create a redis connection pool
     let pool0 = Builder::from_config(Config::from_url_centralized(&format!(
         "{}/0",
@@ -75,11 +86,14 @@ async fn main() -> Result<()> {
         .route(url_for(Page::OAuthLogin), post(post_oauth_login))
         .route(url_for(Page::OAuthLogout), get(get_oauth_logout))
         .route(CALLBACK_PATH, get(callback))
+        .route(url_for(Page::BskyPost), get(get_bsky_post))
+        .route(url_for(Page::BskyPost), post(post_bsky_post))
         .layer(session_layer)
         .with_state(Arc::new(AppState { oauth_client }));
     // run our app with hyper, listening globally on port ${PORT}
     let port = env::var("PORT").unwrap_or_else(|_| String::from("10000"));
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
+    log::info!("Starting server on port {port}");
     axum::serve(listener, app).await?;
 
     Ok(())
@@ -120,8 +134,8 @@ async fn post_oauth_login(
         .await
     {
         Ok(authorization_url) => Ok(Redirect::to(&authorization_url)),
-        Err(err) => {
-            eprintln!("failed to authorize: {err}");
+        Err(e) => {
+            log::error!("failed to authorize: {e}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -143,13 +157,74 @@ async fn callback(
             if let Ok(Some(handle)) = resolve_identity(&did).await {
                 match session.insert(SESSION_USER_KEY, User { did, handle }).await {
                     Ok(_) => return Ok(Redirect::to("/")),
-                    Err(e) => eprintln!("failed to insert DID into session: {e}"),
+                    Err(e) => log::error!("failed to insert DID into session: {e}"),
                 }
             }
         }
-        Err(err) => {
-            eprintln!("failed to callback: {err}");
+        Err(e) => {
+            log::error!("failed to callback: {e}");
         }
     }
     Err(StatusCode::INTERNAL_SERVER_ERROR)
+}
+
+async fn get_bsky_post(g: GlobalContext) -> Result<BskyPost, StatusCode> {
+    Ok(BskyPost { g })
+}
+
+async fn post_bsky_post(
+    g: GlobalContext,
+    State(state): State<Arc<AppState>>,
+    Form(params): Form<PostBskyParams>,
+) -> Result<BskyPost, StatusCode> {
+    let Some(user) = &g.user else {
+        return Err(StatusCode::UNAUTHORIZED);
+    };
+    let oauth_session = match state.oauth_client.restore(&user.did).await {
+        Ok(oauth_session) => oauth_session,
+        Err(e) => {
+            log::error!("failed to restore session: {e}");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+    let agent = Agent::new(oauth_session);
+    let Ok(record) = atrium_api::record::KnownRecord::AppBskyFeedPost(Box::new(
+        atrium_api::app::bsky::feed::post::RecordData {
+            created_at: Datetime::now(),
+            embed: None,
+            entities: None,
+            facets: None,
+            labels: None,
+            langs: None,
+            reply: None,
+            tags: None,
+            text: params.post_text,
+        }
+        .into(),
+    ))
+    .try_into_unknown() else {
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    };
+    if let Err(e) = agent
+        .api
+        .com
+        .atproto
+        .repo
+        .create_record(
+            atrium_api::com::atproto::repo::create_record::InputData {
+                collection: atrium_api::app::bsky::feed::Post::nsid(),
+                record,
+                repo: user.did.clone().into(),
+                rkey: None,
+                swap_commit: None,
+                validate: None,
+            }
+            .into(),
+        )
+        .await
+    {
+        log::error!("failed to create record: {e}");
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    }
+    Ok(BskyPost { g })
 }

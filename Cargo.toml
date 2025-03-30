@@ -17,12 +17,14 @@ askama-derive-axum = { version = "0.1.2", default-features = false }
 axum = { version = "0.8.1" }
 axum-core = "0.5.0"
 elliptic-curve = "0.13.8"
+env_logger = "0.11.7"
 hickory-resolver = { version = "0.24.1", default-features = false, features = [
     "system-config",
     "tokio-runtime",
 ] }
 http = { version = "1.2.0", default-features = false }
 jose-jwk = { version = "0.1.2", default-features = false, features = ["p256"] }
+log = "0.4.27"
 p256 = { version = "0.13.2", default-features = false, features = ["pem"] }
 pkcs8 = { version = "0.10.2", default-features = false, features = ["pem"] }
 serde = { version = "1.0.215", default-features = false, features = ["derive"] }

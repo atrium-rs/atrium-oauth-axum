@@ -18,10 +18,8 @@
   <nav>
     <ul>
     {% if g.user.is_some() %}
-    <!--
-      <li><a href="{# url_for('bsky_post') #}">Create Post</a>
-      <li><a href="{# url_for('oauth_refresh') #}">Refresh Token</a>
-    -->
+      <li><a href="{{ crate::url_for(Page::BskyPost) }}">Create Post</a>
+      <!-- <li><a href="{# url_for('oauth_refresh') #}">Refresh Token</a> -->
       <li><a href="{{ crate::url_for(Page::OAuthLogout) }}">Logout</a>
     {% else %}
       <li><a href="{{ crate::url_for(Page::OAuthLogin) }}"">Login</a>
