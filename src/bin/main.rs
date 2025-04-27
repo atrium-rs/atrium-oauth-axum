@@ -3,6 +3,7 @@ use atrium_api::{
     agent::{Agent, SessionManager},
     types::{string::Datetime, Collection, TryIntoUnknown},
 };
+use atrium_oauth::{AuthorizeOptions, CallbackParams, KnownScope, OAuthClientMetadata, Scope};
 use atrium_oauth_axum::{
     axum::SESSION_USER_KEY,
     constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH},
@@ -10,9 +11,6 @@ use atrium_oauth_axum::{
     template::{url_for, BskyPost, GlobalContext, Home, Login, Page},
     types::User,
     utils::resolve_identity,
-};
-use atrium_oauth_client::{
-    AuthorizeOptions, CallbackParams, KnownScope, OAuthClientMetadata, Scope,
 };
 use axum::{
     extract::State,

@@ -4,7 +4,7 @@ use atrium_identity::{
     did::{CommonDidResolver, CommonDidResolverConfig, DEFAULT_PLC_DIRECTORY_URL},
     Error,
 };
-use atrium_oauth_client::DefaultHttpClient;
+use atrium_oauth::DefaultHttpClient;
 use std::sync::Arc;
 
 pub async fn resolve_identity(did: &Did) -> Result<Option<Handle>, Error> {

@@ -216,8 +216,9 @@ dependencies = [
 
 [[package]]
 name = "atrium-api"
-version = "0.25.0"
-source = "git+https://github.com/sugyan/atrium?branch=feature%2Fagent-rework#ab1c071ab3e1ae94f0b4ba01e59bf9078492887b"
+version = "0.25.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7225f0ca3c78564b784828e3db3e92619cf6e786530c3468df73f49deebc0bd4"
 dependencies = [
  "atrium-common",
  "atrium-xrpc",
@@ -236,8 +237,9 @@ dependencies = [
 
 [[package]]
 name = "atrium-common"
-version = "0.1.0"
-source = "git+https://github.com/sugyan/atrium?branch=feature%2Fagent-rework#ab1c071ab3e1ae94f0b4ba01e59bf9078492887b"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ed5610654043faa396a5a15afac0ac646d76aebe45aebd7cef4f8b96b0ab7f4"
 dependencies = [
  "dashmap",
  "lru",
@@ -250,8 +252,9 @@ dependencies = [
 
 [[package]]
 name = "atrium-identity"
-version = "0.1.1"
-source = "git+https://github.com/sugyan/atrium?branch=feature%2Fagent-rework#ab1c071ab3e1ae94f0b4ba01e59bf9078492887b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84939a5e3a0a442467d6a000f586c092bb763a31c2d38ec1648f5179a720395a"
 dependencies = [
  "atrium-api",
  "atrium-common",
@@ -264,38 +267,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "atrium-oauth-axum"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "askama",
- "askama-derive-axum",
- "askama_axum",
- "atrium-api",
- "atrium-common",
- "atrium-identity",
- "atrium-oauth-client",
- "axum",
- "axum-core 0.5.0",
- "elliptic-curve",
- "env_logger",
- "hickory-resolver",
- "http",
- "jose-jwk",
- "log",
- "p256",
- "pkcs8",
- "serde",
- "serde_json",
- "tokio",
- "tower-sessions",
- "tower-sessions-redis-store",
-]
-
-[[package]]
-name = "atrium-oauth-client"
-version = "0.1.0"
-source = "git+https://github.com/sugyan/atrium?branch=feature%2Fagent-rework#ab1c071ab3e1ae94f0b4ba01e59bf9078492887b"
+name = "atrium-oauth"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f4f210da8f2d7199b15e6b02c0628175791ae5caaf506cfcafe45a20917f37c"
 dependencies = [
  "atrium-api",
  "atrium-common",
@@ -321,9 +296,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "atrium-oauth-axum"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "askama",
+ "askama-derive-axum",
+ "askama_axum",
+ "atrium-api",
+ "atrium-common",
+ "atrium-identity",
+ "atrium-oauth",
+ "axum",
+ "axum-core 0.5.0",
+ "elliptic-curve",
+ "env_logger",
+ "hickory-resolver",
+ "http",
+ "jose-jwk",
+ "log",
+ "p256",
+ "pkcs8",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower-sessions",
+ "tower-sessions-redis-store",
+]
+
+[[package]]
 name = "atrium-xrpc"
-version = "0.12.1"
-source = "git+https://github.com/sugyan/atrium?branch=feature%2Fagent-rework#ab1c071ab3e1ae94f0b4ba01e59bf9078492887b"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0216ad50ce34e9ff982e171c3659e65dedaa2ed5ac2994524debdc9a9647ffa8"
 dependencies = [
  "http",
  "serde",

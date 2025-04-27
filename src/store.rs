@@ -1,6 +1,6 @@
 use atrium_api::types::string::Did;
 use atrium_common::store::Store;
-use atrium_oauth_client::store::{
+use atrium_oauth::store::{
     session::{Session, SessionStore},
     state::{InternalStateData, StateStore},
 };

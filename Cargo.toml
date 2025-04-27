@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-atrium-api = "0.25.0"
-atrium-common = "0.1.0"
-atrium-identity = "0.1.0"
-atrium-oauth-client = "0.1.0"
+atrium-api = "0.25.3"
+atrium-common = "0.1.2"
+atrium-identity = "0.1.4"
+atrium-oauth = "0.1.2"
 anyhow = "1.0.96"
 askama = { version = "0.12.1", default-features = false, features = [
     "with-axum",
@@ -38,12 +38,6 @@ tower-sessions = { version = "0.14.0", default-features = false, features = [
 tower-sessions-redis-store = { version = "0.16.0", features = [
     "enable-native-tls",
 ] }
-
-[patch.crates-io]
-atrium-api = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
-atrium-common = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
-atrium-identity = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
-atrium-oauth-client = { git = "https://github.com/sugyan/atrium", branch = "feature/agent-rework" }
 
 [lints.rust]
 # https://github.com/joshka/askama-derive-axum/issues/4

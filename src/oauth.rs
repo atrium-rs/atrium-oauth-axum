@@ -14,7 +14,7 @@ use atrium_identity::{
     did::{CommonDidResolver, CommonDidResolverConfig, DEFAULT_PLC_DIRECTORY_URL},
     handle::{AtprotoHandleResolver, AtprotoHandleResolverConfig, DnsTxtResolver},
 };
-use atrium_oauth_client::{
+use atrium_oauth::{
     store::{session::Session, state::InternalStateData},
     AtprotoClientMetadata, AuthMethod, DefaultHttpClient, GrantType, KnownScope, OAuthClient,
     OAuthClientConfig, OAuthResolverConfig, Scope,
@@ -65,7 +65,7 @@ pub fn create_oauth_client(
     base_url: String,
     private_keys: Option<String>,
     redis_pool: Pool,
-) -> atrium_oauth_client::Result<Client> {
+) -> atrium_oauth::Result<Client> {
     let http_client = Arc::new(DefaultHttpClient::default());
     let keys = private_keys.map(|keys| {
         keys.split(',')
