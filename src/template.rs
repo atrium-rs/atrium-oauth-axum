@@ -16,7 +16,7 @@ pub fn url_for(page: Page) -> &'static str {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct GlobalContext {
     pub user: Option<User>,
 }
