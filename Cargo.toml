@@ -9,12 +9,9 @@ atrium-common = "0.1.2"
 atrium-identity = "0.1.4"
 atrium-oauth = "0.1.2"
 anyhow = "1.0.96"
-askama = { version = "0.12.1", default-features = false, features = [
-    "with-axum",
-] }
-askama_axum = { version = "0.4.0", default-features = false }
+askama = { version = "0.14.0" }
 askama-derive-axum = { version = "0.1.2", default-features = false }
-axum = { version = "0.8.1" }
+axum = { version = "0.8.3" }
 axum-core = "0.5.0"
 elliptic-curve = "0.13.8"
 env_logger = "0.11.7"
