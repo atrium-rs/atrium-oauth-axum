@@ -4,17 +4,10 @@ use atrium_api::{
     types::{string::Datetime, Collection, TryIntoUnknown},
 };
 use atrium_oauth::{AuthorizeOptions, CallbackParams, KnownScope, OAuthClientMetadata, Scope};
-use atrium_oauth_axum::{
-    axum::SESSION_USER_KEY,
-    constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH},
-    oauth::{self, create_oauth_client},
-    template::{url_for, BskyPost, GlobalContext, Home, Login, Page},
-    types::User,
-    utils::resolve_identity,
-};
 use axum::{
     extract::State,
     http::StatusCode,
+    middleware,
     response::Redirect,
     routing::{get, post},
     Form, Json, Router,
@@ -32,8 +25,17 @@ use tower_sessions_redis_store::{
     RedisStore,
 };
 
+use atrium_oauth_axum::{
+    axum::{handle_error_middleware, SESSION_USER_KEY},
+    constant::{CALLBACK_PATH, CLIENT_METADATA_PATH, JWKS_PATH},
+    oauth::{create_oauth_client, Client},
+    template::{url_for, BskyPost, GlobalContext, Home, Login, Page},
+    types::User,
+    utils::resolve_identity,
+};
+
 struct AppState {
-    oauth_client: oauth::Client,
+    oauth_client: Client,
 }
 
 #[derive(Debug, Deserialize)]
@@ -87,6 +89,7 @@ async fn main() -> Result<()> {
         .route(CALLBACK_PATH, get(callback))
         .route(url_for(Page::BskyPost), get(get_bsky_post))
         .route(url_for(Page::BskyPost), post(post_bsky_post))
+        .layer(middleware::from_fn(handle_error_middleware))
         .layer(session_layer)
         .with_state(Arc::new(AppState { oauth_client }));
     // run our app with hyper, listening globally on port ${PORT}

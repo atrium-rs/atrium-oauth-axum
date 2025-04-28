@@ -16,6 +16,7 @@ pub fn url_for(page: Page) -> &'static str {
     }
 }
 
+#[derive(Default, Clone)]
 pub struct GlobalContext {
     pub user: Option<User>,
 }
@@ -36,4 +37,12 @@ pub struct Login {
 #[template(path = "bsky_post.html")]
 pub struct BskyPost {
     pub g: GlobalContext,
+}
+
+#[derive(Template, IntoResponse)]
+#[template(path = "error.html")]
+pub struct Error {
+    pub g: GlobalContext,
+    pub status_code: u16,
+    pub description: Option<String>,
 }
